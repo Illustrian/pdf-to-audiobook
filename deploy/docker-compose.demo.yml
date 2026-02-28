@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  # Static web front-end (already built by scripts/demo_build_web.sh)
+  web:
+    image: nginx:alpine
+    container_name: pdfvoice_web_demo
+    restart: unless-stopped
+    ports:
+      - "18080:80"           # public HTTP entrypoint
+    volumes:
+      - ../web/dist:/usr/share/nginx/html:ro
+    networks:
+      - pdfvoice_demo
+
+  # Piper TTS server
+  tts:
+    image: ghcr.io/rhasspy/piper:latest
+    container_name: pdfvoice_tts_demo
+    restart: unless-stopped
+    environment:
+      # Choose a small English voice to keep image light; override as needed
+      - PIPER_VOICE=en_US-lessac
+      # Optional temporary download token – DO NOT COMMIT REAL SECRETS
+      - PIPER_DOWNLOAD_TOKEN=${PIPER_DOWNLOAD_TOKEN:-demo-placeholder}
+    command: >-
+      piper-server
+      --port 5000                          # internal port
+      --voice "$PIPER_VOICE"
+    volumes:
+      - tts_cache:/data                    # cached voices/models
+    ports:
+      - "17777:5000"        # public TTS HTTP API
+    networks:
+      - pdfvoice_demo
+
+networks:
+  pdfvoice_demo:
+    driver: bridge
+
+volumes:
+  tts_cache:
+    name: pdfvoice_tts_cache
