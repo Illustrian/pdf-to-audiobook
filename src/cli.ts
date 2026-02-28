@@ -1,5 +1,4 @@
 import { mkdir, writeFile } from 'node:fs/promises';
-import { z } from 'zod';
 import { getEnv } from './config.js';
 import { RunSpecSchema } from './types.js';
 import { runComparison } from './orchestrator.js';
@@ -9,12 +8,10 @@ import { kimiApiAdapter } from './adapters/kimiApi.js';
 import { openclawAgentAdapter } from './adapters/openclawAgent.js';
 import { renderMarkdownReport } from './report/report.js';
 
-const ArgsSchema = z.tuple([z.string(), z.string(), z.string().optional()]);
-
 function usage(): never {
-  // Explicit usage.
-  console.error('Usage: npm run doctor');
-  console.error('   or: npm run compare -- <taskId>');
+  console.error('Usage:');
+  console.error('  npm run doctor');
+  console.error('  npm run compare -- <taskId>');
   process.exit(2);
 }
 
@@ -26,15 +23,17 @@ async function doctor(): Promise<void> {
   console.log('- OPENAI_API_KEY:', env.OPENAI_API_KEY ? 'set' : 'missing');
   console.log('- GEMINI_API_KEY:', env.GEMINI_API_KEY ? 'set' : 'missing');
   console.log('- KIMI_API_KEY:', env.KIMI_API_KEY ? 'set' : 'missing');
+  console.log('- KIMI_BASE_URL:', env.KIMI_BASE_URL ?? 'https://api.moonshot.cn/v1');
+  console.log('- KIMI_MODEL:', env.KIMI_MODEL ?? 'kimi-latest');
 }
 
 async function compare(taskId: string): Promise<void> {
   const spec = RunSpecSchema.parse({
     taskId,
     prompt:
-      `You are an engineering agent. Return ONLY valid JSON matching this shape:\n` +
+      `Return ONLY valid JSON matching this shape:\n` +
       `{\n  "summary": string,\n  "rationale": string,\n  "risks": string[],\n  "followups": string[],\n  "artifacts": {"path": string, "content": string}[],\n  "testsAdded": string[]\n}\n` +
-      `No markdown. No commentary outside JSON.\n\n` +
+      `No markdown. No extra commentary outside JSON.\n\n` +
       `Task: ${taskId}`,
     rubric: [
       'Correctness and edge-case handling',
@@ -58,17 +57,16 @@ async function compare(taskId: string): Promise<void> {
 }
 
 async function main() {
-  const argv = process.argv;
-  const parsed = ArgsSchema.safeParse([argv[0]!, argv[1]!, argv[2], argv[3]]);
-  if (!parsed.success) usage();
+  const cmd = process.argv[2];
+  if (!cmd) usage();
 
-  const cmd = argv[2];
   if (cmd === 'doctor') return doctor();
   if (cmd === 'compare') {
-    const taskId = argv[3];
+    const taskId = process.argv[3];
     if (!taskId) usage();
     return compare(taskId);
   }
+
   usage();
 }
 
