@@ -5,6 +5,8 @@ const EnvSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   KIMI_API_KEY: z.string().optional(),
+  KIMI_BASE_URL: z.string().optional(),
+  KIMI_MODEL: z.string().optional(),
   TELEGRAM_TARGET_CHAT_ID: z.string().optional(),
   MAX_CONCURRENCY: z.coerce.number().int().positive().default(2),
   DEFAULT_TIMEOUT_MS: z.coerce.number().int().positive().default(600000),

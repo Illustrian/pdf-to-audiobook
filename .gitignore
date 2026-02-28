@@ -8,3 +8,4 @@ reports/
 raw/
 .DS_Store
 runtime/
+.worktrees/

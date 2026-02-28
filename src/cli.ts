@@ -5,7 +5,7 @@ import { RunSpecSchema } from './types.js';
 import { runComparison } from './orchestrator.js';
 import { codexAdapter } from './adapters/codex.js';
 import { geminiAdapter } from './adapters/gemini.js';
-import { kimiAdapter } from './adapters/kimi.js';
+import { kimiApiAdapter } from './adapters/kimiApi.js';
 import { openclawAgentAdapter } from './adapters/openclawAgent.js';
 import { renderMarkdownReport } from './report/report.js';
 
@@ -46,7 +46,7 @@ async function compare(taskId: string): Promise<void> {
 
   const { results } = await runComparison({
     spec,
-    adapters: [codexAdapter, geminiAdapter, kimiAdapter, openclawAgentAdapter],
+    adapters: [codexAdapter, geminiAdapter, kimiApiAdapter, openclawAgentAdapter],
   });
 
   await mkdir('reports', { recursive: true });
