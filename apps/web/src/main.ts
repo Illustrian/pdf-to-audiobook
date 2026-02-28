@@ -11,7 +11,7 @@ app.innerHTML = `
     <h1>PDF → Voice (Local Piper TTS)</h1>
     <div class="controls">
       <input id="file" type="file" accept="application/pdf" />
-      <label>TTS URL <input id="ttsUrl" value="http://127.0.0.1:17777" size="28" /></label>
+      <label>TTS URL <input id="ttsUrl" value="" size="28" /></label>
       <label>Token <input id="ttsToken" placeholder="(from local server)" size="18" /></label>
       <label>Speed <input id="speed" type="number" step="0.1" min="0.5" max="2.0" value="1.0" /></label>
       <button id="health">Check TTS</button>
@@ -38,6 +38,11 @@ const els = {
   page: document.querySelector<HTMLDivElement>('#page')!,
   status: document.querySelector<HTMLDivElement>('#status')!,
 };
+
+// Default TTS URL:
+// - Local mode: 127.0.0.1
+// - VPS demo mode: same hostname as the web page
+els.ttsUrl.value = `http://${location.hostname}:17777`;
 
 let pdf: any | null = null;
 let pageModel: Awaited<ReturnType<typeof renderPage>> | null = null;

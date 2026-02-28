@@ -8,6 +8,7 @@ from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import Response
+from fastapi.middleware.cors import CORSMiddleware
 
 APP_VERSION = "0.1.0"
 DEFAULT_HOST = "127.0.0.1"
@@ -22,6 +23,16 @@ PIPER_MODEL = os.environ.get("PIPER_MODEL", "")
 TOKEN = os.environ.get("TTS_TOKEN", "")
 
 app = FastAPI(title="Local Piper TTS", version=APP_VERSION)
+
+# For VPS demo mode, the web app may be served from a different origin.
+# Token is still required for every request.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 
 def _require_token(x_oc_tts_token: Optional[str]) -> None:
