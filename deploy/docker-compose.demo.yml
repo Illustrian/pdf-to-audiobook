@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  web:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "18080:80"
+    volumes:
+      - ../apps/web/dist:/usr/share/nginx/html:ro
+
+  tts:
+    build:
+      context: ..
+      dockerfile: deploy/tts.Dockerfile
+    restart: unless-stopped
+    environment:
+      # REQUIRED: set in deploy/.env.demo
+      - TTS_TOKEN=${TTS_TOKEN:?set-in-deploy/.env.demo}
+      # REQUIRED: set in deploy/.env.demo (downloaded into the image at build)
+      - PIPER_MODEL=/opt/voices/en_US-lessac-medium.onnx
+      - PIPER_BIN=/opt/piper/piper
+      - TTS_CACHE_DIR=/data/cache
+    volumes:
+      - tts_cache:/data/cache
+    ports:
+      - "17777:17777"
+
+volumes:
+  tts_cache:
