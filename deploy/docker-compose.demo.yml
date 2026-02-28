@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../apps/web/dist:/usr/share/nginx/html:ro
+  tts:
+    image: python:3.11-slim
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../apps/tts-local:/app
+    working_dir: /app
+    command: sh -c "pip install uv && uv sync && uv run python test_server.py --host 0.0.0.0 --port 8000"
