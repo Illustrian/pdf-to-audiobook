@@ -1,0 +1,18 @@
+[project]
+name = "tts_local"
+version = "0.1.0"
+description = "Local localhost-only Piper TTS HTTP server for pdf-to-audiobook"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+]
+
+[project.optional-dependencies]
+test = [
+  "httpx>=0.28.1",
+  "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
