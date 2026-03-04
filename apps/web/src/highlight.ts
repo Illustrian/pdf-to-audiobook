@@ -174,3 +174,8 @@ export function showSentenceHighlight(layer: HTMLElement, rects: Rect[]): void {
 
   layer.appendChild(fragment);
 }
+
+export function clearHighlights(layer: HTMLElement): void {
+  layer.innerHTML = '';
+
+}
