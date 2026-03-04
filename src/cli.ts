@@ -9,8 +9,6 @@ import { kimiAdapter } from './adapters/kimi.js';
 import { openclawAgentAdapter } from './adapters/openclawAgent.js';
 import { renderMarkdownReport } from './report/report.js';
 
-const ArgsSchema = z.tuple([z.string(), z.string(), z.string().optional()]);
-
 function usage(): never {
   // Explicit usage.
   console.error('Usage: npm run doctor');
@@ -58,17 +56,16 @@ async function compare(taskId: string): Promise<void> {
 }
 
 async function main() {
-  const argv = process.argv;
-  const parsed = ArgsSchema.safeParse([argv[0]!, argv[1]!, argv[2], argv[3]]);
-  if (!parsed.success) usage();
+  const cmd = process.argv[2];
+  if (!cmd) usage();
 
-  const cmd = argv[2];
   if (cmd === 'doctor') return doctor();
   if (cmd === 'compare') {
-    const taskId = argv[3];
+    const taskId = process.argv[3];
     if (!taskId) usage();
     return compare(taskId);
   }
+
   usage();
 }
 
