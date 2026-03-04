@@ -65,16 +65,32 @@ export function renderHighlightLayer(container: HTMLElement): HTMLElement {
 }
 
 export function showSentenceHighlight(layer: HTMLElement, rects: Rect[]): void {
-  layer.innerHTML = '';
-  for (const r of rects) {
-    const el = document.createElement('div');
-    el.style.position = 'absolute';
-    el.style.left = `${r.left}px`;
-    el.style.top = `${r.top}px`;
-    el.style.width = `${r.width}px`;
-    el.style.height = `${r.height}px`;
-    el.style.background = 'rgba(255, 230, 0, 0.35)';
-    el.style.borderRadius = '3px';
-    layer.appendChild(el);
+  const children = Array.from(layer.children) as HTMLElement[];
+  
+  for (let i = 0; i < Math.max(rects.length, children.length); i++) {
+    const r = rects[i] as Rect | undefined;
+    let el = children[i];
+    
+    if (!r) {
+      if (el) {
+        el.style.opacity = '0';
+      }
+      continue;
+    }
+
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'highlight-rect';
+      layer.appendChild(el);
+    }
+    
+    const padX = 4;
+    const padY = 2;
+    
+    el.style.opacity = '1';
+    el.style.left = `${r.left - padX}px`;
+    el.style.top = `${r.top - padY}px`;
+    el.style.width = `${r.width + padX * 2}px`;
+    el.style.height = `${r.height + padY * 2}px`;
   }
 }
