@@ -70,7 +70,7 @@ let numPages = 0;
 let currentPage = 1;
 let pageModel: Awaited<ReturnType<typeof renderPage>> | null = null;
 let sentences: ReturnType<typeof mapSentencesToItems> | null = null;
-let highlightLayer: HTMLElement | null = null;
+let highlightLayer: any = null;
 let player: SentencePlayer | null = null;
 let stopRequested = false;
 
@@ -108,7 +108,8 @@ async function loadPage(n: number) {
 
   // Highlight layer overlay
   els.page.style.position = 'relative';
-  highlightLayer?.remove();
+  highlightLayer?.destroy?.();
+  highlightLayer?.remove?.();
   highlightLayer = renderHighlightLayer(els.page);
 
   const idx = buildTextIndex(pageModel.textItems);
