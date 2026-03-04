@@ -44,7 +44,7 @@ export function splitIntoSentences(fullText: string): Array<{ start: number; end
   const out: Array<{ start: number; end: number; text: string }> = [];
   const text = fullText;
 
-  let start = 0;
+  let cursor = 0;
   const isTerminal = (ch: string) => ch === '.' || ch === '!' || ch === '?';
 
   for (let i = 0; i < text.length; i++) {
@@ -55,17 +55,22 @@ export function splitIntoSentences(fullText: string): Array<{ start: number; end
     const next = text[i + 1];
     if (next && !/\s/.test(next)) continue;
 
-    const end = i + 1;
-    const slice = text.slice(start, end).trim();
-    if (slice.length) out.push({ start: start + (text.slice(start).match(/^\s+/)?.[0].length ?? 0), end, text: slice });
+    const rawSeg = text.slice(cursor, i + 1);
+    const trimmed = rawSeg.trim();
+    if (trimmed.length) {
+      const segStart = cursor + rawSeg.indexOf(trimmed);
+      out.push({ start: segStart, end: segStart + trimmed.length, text: trimmed });
+    }
 
-    start = end + (next && /\s/.test(next) ? 1 : 0);
+    cursor = i + 1;
+    while (cursor < text.length && /\s/.test(text[cursor]!)) cursor++;
   }
 
   // Remainder
-  const rem = text.slice(start).trim();
+  const rawRem = text.slice(cursor);
+  const rem = rawRem.trim();
   if (rem.length) {
-    const remStart = text.indexOf(rem, start);
+    const remStart = cursor + rawRem.indexOf(rem);
     out.push({ start: remStart, end: remStart + rem.length, text: rem });
   }
 
@@ -75,7 +80,7 @@ export function splitIntoSentences(fullText: string): Array<{ start: number; end
 export function mapSentencesToItems(fullText: string, spans: ItemSpan[]): Sentence[] {
   const splits = splitIntoSentences(fullText);
   return splits.map((s, idx) => {
-    const overlaps = spans.filter(sp => !(sp.end <= s.start || sp.start >= s.end));
+    const overlaps = spans.filter((sp) => !(sp.end <= s.start || sp.start >= s.end));
     return {
       index: idx,
       text: s.text,
