@@ -14,7 +14,7 @@ export const kimiAdapter: ProviderAdapter = {
     try {
       const { stdout, stderr, durationMs } = await runCliJson({
         cmd: 'kimi',
-        args: ['--json', '--prompt', spec.prompt],
+        args: ['--print', '--output-format', 'json', '--final-message-only', '--prompt', spec.prompt],
         timeoutMs: opts.timeoutMs,
       });
 
