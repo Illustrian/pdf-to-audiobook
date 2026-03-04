@@ -218,10 +218,20 @@ export interface HighlightLayer {
   destroy: () => void;
 }
 
+/** Helper to clear highlights from a layer element */
+export function clearHighlightLayer(layer: HTMLElement): void {
+  layer.innerHTML = '';
+}
+
+/** Helper to destroy a layer element */
+export function destroyHighlightLayer(layer: HTMLElement): void {
+  layer.remove();
+}
+
 export function renderHighlightLayer(
   container: HTMLElement,
   options: HighlightOptions = {}
-): HighlightLayer {
+): HTMLElement {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   const layer = document.createElement('div');
@@ -237,20 +247,7 @@ export function renderHighlightLayer(
 
   container.appendChild(layer);
 
-  const clear = (): void => {
-    layer.innerHTML = '';
-  };
-
-  const destroy = (): void => {
-    layer.remove();
-  };
-
-  return {
-    element: layer,
-    options: opts,
-    clear,
-    destroy,
-  };
+  return layer;
 }
 
 /** Animate a highlight element with fade-in effect */
@@ -336,16 +333,14 @@ function scrollRectIntoView(
 }
 
 export function showSentenceHighlight(
-  layer: HTMLElement | HighlightLayer,
+  layer: HTMLElement,
   rects: Rect[],
   options: HighlightOptions = {}
 ): void {
-  const element = 'element' in layer ? layer.element : layer;
-  const baseOptions = 'options' in layer ? layer.options : DEFAULT_OPTIONS;
-  const opts = { ...baseOptions, ...options };
+  const opts = { ...DEFAULT_OPTIONS, ...options };
 
   // Clear existing highlights
-  element.innerHTML = '';
+  layer.innerHTML = '';
 
   if (rects.length === 0) return;
 
@@ -369,7 +364,7 @@ export function showSentenceHighlight(
       : 'none';
     el.style.willChange = opts.animate ? 'opacity, transform' : 'auto';
 
-    element.appendChild(el);
+    layer.appendChild(el);
 
     if (opts.animate) {
       animateHighlightIn(el, opts.animationDurationMs, 1);
@@ -380,7 +375,7 @@ export function showSentenceHighlight(
   if (opts.scrollIntoView) {
     const boundingRect = getBoundingRect(rects);
     if (boundingRect) {
-      const container = element.parentElement;
+      const container = layer.parentElement;
       if (container) {
         scrollRectIntoView(container, boundingRect, opts.scrollBehavior);
       }
