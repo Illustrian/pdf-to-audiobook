@@ -8,35 +8,45 @@ import { SentencePlayer } from './player';
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="wrap">
-    <h1>PDF → Voice (Piper TTS)</h1>
+    <header>
+      <h1>PDF → Voice (Piper TTS)</h1>
+    </header>
 
     <div class="controls">
-      <input id="file" type="file" accept="application/pdf" />
+      <div class="controls-group">
+        <input id="file" type="file" accept="application/pdf" />
+      </div>
 
-      <span class="spacer"></span>
+      <div class="controls-group">
+        <button id="prev" disabled>Prev</button>
+        <label>Page <input id="pageNo" type="number" min="1" step="1" value="1" style="width: 4rem; text-align: center;" /></label>
+        <span id="pageOut" class="pill">-/ -</span>
+        <button id="next" disabled>Next</button>
+      </div>
 
-      <button id="prev" disabled>Prev</button>
-      <label>Page <input id="pageNo" type="number" min="1" step="1" value="1" size="4" /></label>
-      <span id="pageOut" class="pill">-/ -</span>
-      <button id="next" disabled>Next</button>
-
-      <span class="spacer"></span>
-
-      <label>TTS URL <input id="ttsUrl" value="" size="28" /></label>
-      <label>Token <input id="ttsToken" placeholder="(required)" size="18" /></label>
-      <label>Speed <input id="speed" type="number" step="0.1" min="0.5" max="2.0" value="1.0" /></label>
-      <label>Prefetch <input id="prefetch" type="number" min="0" max="8" step="1" value="0" /></label>
-      <label><input id="autoNextPage" type="checkbox" checked /> Auto-next page</label>
-
-      <button id="health">Check TTS</button>
-      <span id="healthOut" class="pill">unknown</span>
-      <button id="play" disabled>Play</button>
-      <button id="stop" disabled>Stop</button>
+      <div class="controls-group" style="border-right: none; flex: 1; justify-content: flex-end; flex-wrap: wrap;">
+        <label>TTS URL <input id="ttsUrl" value="" style="width: 14rem;" /></label>
+        <label>Token <input id="ttsToken" placeholder="(required)" style="width: 8rem;" /></label>
+        <label>Speed <input id="speed" type="number" step="0.1" min="0.5" max="2.0" value="1.0" style="width: 4rem;" /></label>
+        <label>Prefetch <input id="prefetch" type="number" min="0" max="8" step="1" value="0" style="width: 3rem;" /></label>
+        <label style="cursor: pointer;"><input id="autoNextPage" type="checkbox" checked /> Auto-next</label>
+      </div>
     </div>
 
     <div class="stage">
-      <div id="page" class="page"></div>
-      <div id="status" class="status"></div>
+      <div class="status-bar">
+        <div class="status-text" id="status">Waiting for PDF...</div>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <button id="health" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; height: auto; border-radius: 999px;">Check TTS</button>
+          <span id="healthOut" class="pill">unknown</span>
+          <div style="width: 1px; height: 1.5rem; background: var(--border); margin: 0 0.25rem;"></div>
+          <button id="stop" disabled>Stop</button>
+          <button id="play" class="primary" disabled>Play</button>
+        </div>
+      </div>
+      <div class="page-wrapper">
+        <div id="page" class="page"></div>
+      </div>
     </div>
   </div>
 `;
