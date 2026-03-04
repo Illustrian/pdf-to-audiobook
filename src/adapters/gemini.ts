@@ -3,6 +3,10 @@ import { extractFirstJsonObject } from '../util/json.js';
 import { RunOutputSchema, type ProviderAdapter, type RunResult, type RunSpec } from '../types.js';
 import { runCliJson } from './baseCli.js';
 
+type GeminiJsonOutput = {
+  response?: string;
+};
+
 export const geminiAdapter: ProviderAdapter = {
   id: 'gemini',
   async isAvailable() {
@@ -14,11 +18,22 @@ export const geminiAdapter: ProviderAdapter = {
     try {
       const { stdout, stderr, durationMs } = await runCliJson({
         cmd: 'gemini',
-        args: ['--json', '--prompt', spec.prompt],
+        args: ['--output-format', 'json', '--prompt', spec.prompt],
         timeoutMs: opts.timeoutMs,
       });
 
-      const parsed = extractFirstJsonObject(stdout);
+      // gemini --output-format json wraps the model output in { response: "..." }
+      let modelText = stdout;
+      try {
+        const outer = JSON.parse(stdout) as GeminiJsonOutput;
+        if (typeof outer.response === 'string' && outer.response.trim()) {
+          modelText = outer.response;
+        }
+      } catch {
+        // ignore, fall back to stdout
+      }
+
+      const parsed = extractFirstJsonObject(modelText);
       const output = RunOutputSchema.parse(parsed);
 
       return {
