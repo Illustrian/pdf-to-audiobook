@@ -5,39 +5,60 @@ import { buildSentenceRects, renderHighlightLayer, showSentenceHighlight } from 
 import { ttsHealth } from './ttsClient';
 import { SentencePlayer } from './player';
 
+type StatusTone = 'neutral' | 'info' | 'ok' | 'bad';
+
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
-  <div class="wrap">
-    <h1>PDF → Voice (Piper TTS)</h1>
+  <div class="app-shell">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
 
-    <div class="controls">
-      <input id="file" type="file" accept="application/pdf" />
+    <header class="hero">
+      <p class="eyebrow">Local narration workflow</p>
+      <h1>PDF to Audiobook</h1>
+      <p class="sub">Load a PDF, map sentences, and stream Piper TTS with live sentence highlighting.</p>
+    </header>
 
-      <span class="spacer"></span>
+    <section class="panel controls-panel">
+      <div class="control-grid">
+        <div class="control-group">
+          <h2>Document</h2>
+          <label class="file-label">PDF file <input id="file" type="file" accept="application/pdf" /></label>
+          <div class="pager-row">
+            <button id="prev" disabled>Prev</button>
+            <label>Page <input id="pageNo" type="number" min="1" step="1" value="1" size="4" /></label>
+            <span id="pageOut" class="pill">- / -</span>
+            <button id="next" disabled>Next</button>
+          </div>
+        </div>
 
-      <button id="prev" disabled>Prev</button>
-      <label>Page <input id="pageNo" type="number" min="1" step="1" value="1" size="4" /></label>
-      <span id="pageOut" class="pill">-/ -</span>
-      <button id="next" disabled>Next</button>
+        <div class="control-group">
+          <h2>TTS</h2>
+          <label>TTS URL <input id="ttsUrl" value="" size="28" /></label>
+          <label>Token <input id="ttsToken" placeholder="(required)" size="18" /></label>
+          <div class="health-row">
+            <button id="health">Check TTS</button>
+            <span id="healthOut" class="pill">unknown</span>
+          </div>
+        </div>
 
-      <span class="spacer"></span>
+        <div class="control-group">
+          <h2>Playback</h2>
+          <label>Speed <input id="speed" type="number" step="0.1" min="0.5" max="2.0" value="1.0" /></label>
+          <label>Prefetch <input id="prefetch" type="number" min="0" max="8" step="1" value="0" /></label>
+          <label class="checkbox-row"><input id="autoNextPage" type="checkbox" checked /> Auto-next page</label>
+          <div class="action-row">
+            <button id="play" disabled>Play</button>
+            <button id="stop" disabled>Stop</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      <label>TTS URL <input id="ttsUrl" value="" size="28" /></label>
-      <label>Token <input id="ttsToken" placeholder="(required)" size="18" /></label>
-      <label>Speed <input id="speed" type="number" step="0.1" min="0.5" max="2.0" value="1.0" /></label>
-      <label>Prefetch <input id="prefetch" type="number" min="0" max="8" step="1" value="0" /></label>
-      <label><input id="autoNextPage" type="checkbox" checked /> Auto-next page</label>
-
-      <button id="health">Check TTS</button>
-      <span id="healthOut" class="pill">unknown</span>
-      <button id="play" disabled>Play</button>
-      <button id="stop" disabled>Stop</button>
-    </div>
-
-    <div class="stage">
+    <section class="panel stage-panel">
       <div id="page" class="page"></div>
-      <div id="status" class="status"></div>
-    </div>
+      <div id="status" class="status">Load a PDF to begin.</div>
+    </section>
   </div>
 `;
 
@@ -74,6 +95,11 @@ let highlightLayer: HTMLElement | null = null;
 let player: SentencePlayer | null = null;
 let stopRequested = false;
 
+function setStatus(text: string, tone: StatusTone = 'neutral') {
+  els.status.textContent = text;
+  els.status.className = `status tone-${tone}`;
+}
+
 function ttsOpts() {
   return {
     baseUrl: els.ttsUrl.value.trim(),
@@ -86,6 +112,7 @@ async function refreshHealth() {
   els.healthOut.textContent = h.ok ? `ok${h.version ? ` (${h.version})` : ''}` : `down`;
   els.healthOut.className = `pill ${h.ok ? 'ok' : 'bad'}`;
   els.play.disabled = !h.ok || !sentences;
+  if (!h.ok && h.error) setStatus(`TTS unavailable: ${h.error}`, 'bad');
 }
 
 function updatePagerUi() {
@@ -102,11 +129,10 @@ async function loadPage(n: number) {
   currentPage = target;
   updatePagerUi();
 
-  els.status.textContent = `Loading page ${currentPage}...`;
+  setStatus(`Loading page ${currentPage}...`, 'info');
 
   pageModel = await renderPage(pdf, currentPage, { scale: 1.5, container: els.page });
 
-  // Highlight layer overlay
   els.page.style.position = 'relative';
   highlightLayer?.remove();
   highlightLayer = renderHighlightLayer(els.page);
@@ -114,7 +140,7 @@ async function loadPage(n: number) {
   const idx = buildTextIndex(pageModel.textItems);
   sentences = mapSentencesToItems(idx.fullText, idx.spans);
 
-  els.status.textContent = `Loaded page ${currentPage}. Sentences: ${sentences.length}.`;
+  setStatus(`Loaded page ${currentPage}. Sentences: ${sentences.length}.`, 'ok');
   await refreshHealth();
 }
 
@@ -138,27 +164,26 @@ async function playFrom(pageNo: number, startSentence: number) {
   await player.play(sentences, startSentence, {
     onSentenceStart: (i) => {
       const s = sentences![i]!;
-      els.status.textContent = `Page ${currentPage}: ${s.text}`;
+      setStatus(`Page ${currentPage}: ${s.text}`, 'info');
       if (highlightLayer) {
         const rects = buildSentenceRects(pageModel!.viewport, s, pageModel!.textItems);
         showSentenceHighlight(highlightLayer, rects);
       }
     },
     onError: (e) => {
-      els.status.textContent = `Error: ${String((e as any)?.message ?? e)}`;
+      setStatus(`Error: ${String((e as any)?.message ?? e)}`, 'bad');
     },
   });
 
   if (stopRequested) return;
 
-  // Auto-advance to next page (continuous read)
   if (els.autoNextPage.checked && currentPage < numPages) {
     return playFrom(currentPage + 1, 0);
   }
 
   els.play.disabled = false;
   els.stop.disabled = true;
-  els.status.textContent = 'Done.';
+  setStatus('Done.', 'ok');
 }
 
 els.health.onclick = () => refreshHealth();
@@ -167,7 +192,7 @@ els.file.onchange = async () => {
   const f = els.file.files?.[0];
   if (!f) return;
 
-  els.status.textContent = 'Loading PDF...';
+  setStatus('Loading PDF...', 'info');
   pdf = await loadPdfFromFile(f);
   numPages = Number(pdf?.numPages || 0);
   currentPage = 1;
@@ -200,6 +225,6 @@ els.stop.onclick = () => {
   player?.stop();
   els.stop.disabled = true;
   els.play.disabled = false;
-  els.status.textContent = 'Stopped.';
+  setStatus('Stopped.', 'neutral');
   if (highlightLayer) highlightLayer.innerHTML = '';
 };
