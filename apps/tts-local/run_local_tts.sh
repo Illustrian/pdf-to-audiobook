@@ -16,7 +16,7 @@ fi
 
 uv sync
 
-HOST=${TTS_HOST:-127.0.0.1}
+HOST=${TTS_HOST:-0.0.0.0}
 PORT=${TTS_PORT:-17777}
 
 exec uv run uvicorn tts_local.server:app --host "$HOST" --port "$PORT"

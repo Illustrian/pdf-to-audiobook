@@ -14,5 +14,5 @@ npm run dev
 ```
 
 Configure in the UI:
-- TTS URL: `http://127.0.0.1:17777`
+- TTS URL:  (or just use the default shown in the UI) (or just use the default shown in the UI)`http://127.0.0.1:17777`
 - Token: from `apps/tts-local/run_local_tts.sh`

@@ -1,6 +1,6 @@
-# Local Piper TTS service (localhost)
+# Local Piper TTS service (VPS-friendly)
 
-This is a localhost-only HTTP wrapper around Piper.
+This is an HTTP wrapper around Piper. For VPS use, run it bound to 0.0.0.0 and protect it with TTS_TOKEN.
 
 ## Requirements
 - `uv`
@@ -16,7 +16,7 @@ export PIPER_MODEL="/path/to/en_US-*.onnx"  # required
 ./run_local_tts.sh
 ```
 
-It binds to `127.0.0.1:17777` by default.
+It binds to `0.0.0.0:17777` by default (set TTS_HOST to override).
 
 ## API
 - `GET /health` (requires `X-OC-TTS-TOKEN`)
