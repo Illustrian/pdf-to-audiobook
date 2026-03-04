@@ -1,7 +1,31 @@
 import { execa } from 'execa';
 import { extractFirstJsonObject } from '../util/json.js';
 import { RunOutputSchema, type ProviderAdapter, type RunResult, type RunSpec } from '../types.js';
-import { runCliJson } from './baseCli.js';
+
+type KimiStreamEvent = {
+  role?: string;
+  content?: string;
+};
+
+function extractKimiFinalJson(stdout: string): unknown {
+  const lines = stdout
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const ev = JSON.parse(lines[i]!) as KimiStreamEvent;
+      if (ev.role === 'assistant' && typeof ev.content === 'string' && ev.content.trim()) {
+        return extractFirstJsonObject(ev.content);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return extractFirstJsonObject(stdout);
+}
 
 export const kimiAdapter: ProviderAdapter = {
   id: 'kimi',
@@ -12,13 +36,23 @@ export const kimiAdapter: ProviderAdapter = {
   async run(spec: RunSpec, opts: { timeoutMs: number }): Promise<RunResult> {
     const startedAt = new Date().toISOString();
     try {
-      const { stdout, stderr, durationMs } = await runCliJson({
-        cmd: 'kimi',
-        args: ['--json', '--prompt', spec.prompt],
-        timeoutMs: opts.timeoutMs,
-      });
+      const start = Date.now();
+      const res = await execa(
+        'kimi',
+        ['--print', '--output-format', 'stream-json', '--final-message-only', '--prompt', spec.prompt],
+        {
+          timeout: opts.timeoutMs,
+          reject: false,
+          maxBuffer: 10 * 1024 * 1024,
+        }
+      );
+      const durationMs = Date.now() - start;
 
-      const parsed = extractFirstJsonObject(stdout);
+      if (res.exitCode !== 0) {
+        throw new Error(`CLI exit code ${res.exitCode}: ${(res.stderr || res.stdout).slice(0, 500)}`);
+      }
+
+      const parsed = extractKimiFinalJson(res.stdout ?? '');
       const output = RunOutputSchema.parse(parsed);
 
       return {
@@ -28,8 +62,8 @@ export const kimiAdapter: ProviderAdapter = {
         finishedAt: new Date().toISOString(),
         durationMs,
         output,
-        rawStdout: stdout,
-        rawStderr: stderr,
+        rawStdout: res.stdout,
+        rawStderr: res.stderr,
       };
     } catch (err: any) {
       return {
@@ -38,7 +72,7 @@ export const kimiAdapter: ProviderAdapter = {
         startedAt,
         finishedAt: new Date().toISOString(),
         durationMs: 0,
-        errorCode: err?.code === 'TIMEOUT' ? 'TIMEOUT' : 'UNKNOWN',
+        errorCode: err?.code === 'ETIMEDOUT' || err?.code === 'TIMEOUT' ? 'TIMEOUT' : 'UNKNOWN',
         errorMessage: String(err?.message ?? err),
       };
     }
